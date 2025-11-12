@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Interattivo: Prima vs. Dopo la Rivoluzione Francese</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .question-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            transition: transform 0.2s;
+        }
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .question-text {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 15px;
+        }
+        /* Stili per i pulsanti affiancati */
+        .options-container {
+            display: flex;
+            flex-direction: column; /* Imposta la colonna per il mobile */
+            gap: 15px; 
+        }
+
+        @media (min-width: 640px) { /* Da tablet in su, usa la riga */
+            .options-container {
+                flex-direction: row;
+            }
+        }
+        
+        .answer-button {
+            flex-grow: 1; 
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            transition: background-color 0.2s, transform 0.1s;
+            cursor: pointer;
+            border: none;
+            text-align: center;
+            line-height: 1.2; /* Aggiunto per un aspetto migliore su due righe */
+        }
+        
+        /* Colori specifici per i pulsanti PRIMA e DOPO */
+        #option-0 { /* PRIMA della Rivoluzione */
+            background-color: #4338ca; /* Indaco 700 */
+            color: white;
+        }
+        #option-1 { /* DOPO la Rivoluzione */
+            background-color: #ea580c; /* Arancio 700 */
+            color: white;
+        }
+
+        .answer-button:hover:not(:disabled) {
+            opacity: 0.85;
+        }
+        .answer-button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        /* Stili per i risultati (verde per corretto, rosso per errato) */
+        .button-correct {
+            background-color: #10b981 !important; /* Verde Smeraldo */
+            border: 2px solid #059669; 
+            color: white !important; 
+        }
+        .button-incorrect {
+            background-color: #ef4444 !important; /* Rosso */
+            border: 2px solid #b91c1c; 
+            color: white !important;
+        }
+        
+        .rationale {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+        .rationale-correct {
+            background-color: #d1fae5; /* Light green */
+            color: #065f46; /* Dark green */
+            border-left: 4px solid #10b981;
+        }
+        .rationale-incorrect {
+            background-color: #fee2e2; /* Light red */
+            color: #991b1b; /* Dark red */
+            border-left: 4px solid #f97316;
+        }
+        .nav-button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .hint-toggle {
+            color: #1c5fd1;
+            font-size: 0.9rem;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-block;
+            transition: color 0.2s;
+        }
+        .hint-toggle:hover {
+            color: #004d9c;
+        }
+        .hint-text {
+            margin-top: 5px;
+            padding: 8px;
+            border-radius: 6px;
+            background-color: #f3f4f6;
+            color: #4b5563;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8">
+    <div class="container">
+        <header class="header">
+            <h1 class="text-3xl font-bold text-center text-gray-800">Quiz Interattivo: Prima o Dopo la Rivoluzione Francese?</h1>
+            <p class="text-center text-gray-600 mt-2">Collega ogni affermazione al periodo corretto: **Prima della Rivoluzione Francese** o **Dopo la Rivoluzione Francese** (a partire dal 1789/1791).</p>
+        </header>
+
+        <div id="quiz-container">
+            <!-- La domanda corrente verrà caricata qui -->
+        </div>
+
+        <div id="results-container" class="hidden text-center mt-8 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h2 class="text-2xl font-bold text-yellow-800 mb-4">Quiz Completato!</h2>
+            <p id="score-display" class="text-xl font-semibold text-gray-700"></p>
+            <p class="mt-4 text-gray-600">Rivedi le risposte in alto per i dettagli o riavvia l'esercizio.</p>
+            <button onclick="restartQuiz()" class="nav-button bg-blue-600 hover:bg-blue-700 mt-6 transition duration-150">Ricomincia</button>
+        </div>
+
+        <div class="flex justify-between mt-6">
+            <button id="prev-btn" onclick="navigateQuestion(-1)" class="nav-button bg-gray-400 hover:bg-gray-500 disabled:opacity-50" disabled>Precedente</button>
+            <button id="next-btn" onclick="navigateQuestion(1)" class="nav-button bg-green-600 hover:bg-green-700 disabled:opacity-50">Prossima Domanda</button>
+        </div>
+    </div>
+
+    <script>
+        // Dati dell'esercizio (struttura identica al quiz JSON)
+        const quizData = {
+          "questions": [
+            {
+              "questionNumber": 1,
+              "question": "Il potere assoluto appartiene al re per diritto divino. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Il Re prima della Rivoluzione era un monarca assoluto, il cui potere non era limitato da leggi o Costituzioni, giustificato dalla volontà di Dio.", "isCorrect": true },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Dopo la Rivoluzione (dopo il 1791), il potere del re fu limitato da una Costituzione e non era più considerato di origine divina.", "isCorrect": false }
+              ],
+              "hint": "Il concetto di 'diritto divino' è il fondamento della monarchia assoluta."
+            },
+            {
+              "questionNumber": 2,
+              "question": "Il re possiede un potere limitato dalle leggi e non più assoluto. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Prima della Rivoluzione, il re era 'assoluto', ovvero sciolto da vincoli legali, e non limitato da leggi scritte o istituzioni.", "isCorrect": false },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Questa condizione si realizza con l'istituzione della Monarchia Costituzionale in seguito alla Rivoluzione (1791) e alla divisione dei poteri.", "isCorrect": true }
+              ],
+              "hint": "Il 'potere limitato' e la Costituzione sono sinonimi di 'Nuovo Mondo politico'."
+            },
+            {
+              "questionNumber": 3,
+              "question": "La legge è espressione della volontà del Re. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Prima della Rivoluzione, il Re era la fonte unica e suprema della legge, senza vincoli di volontà popolare.", "isCorrect": true },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Dopo la Rivoluzione, la legge divenne espressione della volontà generale dei cittadini, non di un singolo sovrano.", "isCorrect": false }
+              ],
+              "hint": "Questo principio è legato al motto 'L'État, c'est moi' (Lo Stato sono io)."
+            },
+            {
+              "questionNumber": 4,
+              "question": "La legge è espressione della volontà generale, alla cui formazione concorrono tutti i cittadini. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Prima della Rivoluzione, la legge era espressione della volontà del Re, non del consenso collettivo dei cittadini.", "isCorrect": false },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Questo principio di sovranità popolare e legale è centrale nella Dichiarazione dei Diritti dell'Uomo e del Cittadino del 1789 (Art. 6).", "isCorrect": true }
+              ],
+              "hint": "La volontà generale (rousseauiana) è il concetto chiave del nuovo Stato di diritto."
+            },
+            {
+              "questionNumber": 5,
+              "question": "La società è divisa in tre stati (clero, nobiltà e Terzo stato) con privilegi differenziati. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "La divisione in ordini sociali con disuguaglianza giuridica e privilegi era la base della società d'Antico Regime.", "isCorrect": true },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Dopo la Rivoluzione, la divisione in stati fu abolita, stabilendo l'uguaglianza giuridica tra tutti i cittadini.", "isCorrect": false }
+              ],
+              "hint": "I 'tre stati' rappresentano la struttura rigida e gerarchica della Francia pre-1789."
+            },
+            {
+              "questionNumber": 6,
+              "question": "La società si fonda sui tre princìpi della Rivoluzione francese: libertà, uguaglianza, fraternità. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "I principi prima della Rivoluzione erano opposti: assolutismo, privilegio e disuguaglianza.", "isCorrect": false },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Questi tre principi sono la sintesi degli ideali e delle conquiste ottenute con la Rivoluzione del 1789.", "isCorrect": true }
+              ],
+              "hint": "Questi tre concetti sono lo slogan politico del periodo rivoluzionario."
+            },
+            {
+              "questionNumber": 7,
+              "question": "I ceti dominanti sono il clero e i nobili, per diritto divino e di nascita. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Clero e nobiltà erano i detentori del potere e dei privilegi in virtù della tradizione e del diritto ereditario.", "isCorrect": true },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Dopo la Rivoluzione, la borghesia, basata sulla ricchezza economica, divenne la nuova classe dirigente.", "isCorrect": false }
+              ],
+              "hint": "Pensa a chi occupava le alte cariche dello Stato e dell'esercito prima del 1789."
+            },
+            {
+              "questionNumber": 8,
+              "question": "I ceti dominanti sono la borghesia, grazie alla sua ricchezza. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Nonostante la sua ricchezza, la borghesia prima della Rivoluzione non era il ceto dominante in senso politico e giuridico.", "isCorrect": false },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "La Rivoluzione portò la borghesia, forte del suo potere economico, ad assumere il ruolo di classe dirigente in un sistema meritocratico.", "isCorrect": true }
+              ],
+              "hint": "Quale classe sociale ha trasformato la sua potenza economica in potere politico dopo il 1789?"
+            },
+            {
+              "questionNumber": 9,
+              "question": "Il clero e la nobiltà sono quasi esenti dal pagamento delle tasse e ne pretendono dal popolo. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "L'esenzione fiscale di clero e nobiltà era il principale 'privilegio' economico dell'Antico Regime, che causò la grave crisi finanziaria.", "isCorrect": true },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Dopo la Rivoluzione fu stabilita l'uguaglianza fiscale; tutti, inclusi nobili e clero, dovevano pagare le tasse.", "isCorrect": false }
+              ],
+              "hint": "L'iniquità del sistema fiscale fu una delle scintille che accese la Rivoluzione."
+            },
+            {
+              "questionNumber": 10,
+              "question": "Tutti i cittadini devono pagare le tasse allo Stato in ragione delle loro sostanze. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Prima della Rivoluzione il sistema fiscale era iniquo: i ceti più ricchi erano esentati e i più poveri gravati dal peso fiscale.", "isCorrect": false },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Questo principio di equità fiscale (proporzionalità al reddito) è una conquista della Rivoluzione (Art. 13 della Dichiarazione).", "isCorrect": true }
+              ],
+              "hint": "Questo è il principio di 'uguaglianza fiscale' promosso dagli ideali rivoluzionari."
+            },
+            {
+              "questionNumber": 11,
+              "question": "Non vi è la possibilità di manifestare liberamente il proprio pensiero, né la libertà di organizzarsi politicamente, né la libertà di iniziativa economica. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "L'assenza di libertà civili e politiche era un tratto distintivo dell'assolutismo monarchico che precedette la Rivoluzione.", "isCorrect": true },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Dopo la Rivoluzione, queste libertà furono sancite come diritti fondamentali nella Dichiarazione del 1789, ponendo fine al controllo statale assoluto.", "isCorrect": false }
+              ],
+              "hint": "Questo scenario descrive un regime di censura e controllo politico ed economico."
+            },
+            {
+              "questionNumber": 12,
+              "question": "Vi è la possibilità di manifestare liberamente il proprio pensiero, la libertà di organizzarsi politicamente, la libertà di iniziativa economica. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Questi diritti e libertà erano negati o fortemente limitati prima della Rivoluzione, dove il re esercitava il controllo assoluto.", "isCorrect": false },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "La garanzia di queste libertà è una delle conquiste fondamentali e durature della Rivoluzione Francese, basata sui diritti naturali.", "isCorrect": true }
+              ],
+              "hint": "La Rivoluzione ha stabilito i diritti civili e politici per tutti i cittadini."
+            },
+            {
+              "questionNumber": 13,
+              "question": "La società si fonda sulla tradizione, ed è giusto tutto ciò che proviene dal passato. Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "La società prima della Rivoluzione basava la sua legittimità sulla tradizione e sul rispetto di un ordine gerarchico consolidato (conservatorismo).", "isCorrect": true },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Dopo la Rivoluzione, la società fu rifondata su principi razionali (Illuminismo) e sui diritti naturali, non sulla tradizione.", "isCorrect": false }
+              ],
+              "hint": "Questo principio è legato alla giustificazione storica e religiosa del potere monarchico."
+            },
+            {
+              "questionNumber": 14,
+              "question": "Il sistema di governo è basato sulla sovranità popolare e sulla divisione dei poteri (legislativo, esecutivo e giudiziario). Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Prima della Rivoluzione, il re deteneva la sovranità e concentrava tutti i poteri nelle sue mani (assolutismo).", "isCorrect": false },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Questi principi fondamentali (sovranità popolare e divisione dei poteri) sono alla base del nuovo Stato di diritto nato con la Rivoluzione, ispirato a Locke e Montesquieu.", "isCorrect": true }
+              ],
+              "hint": "La 'divisione dei poteri' è la negazione dell'assolutismo monarchico."
+            },
+            {
+              "questionNumber": 15,
+              "question": "La giustizia non è uguale per tutti, ma cambia a seconda dell'ordine sociale (nobili e clero hanno tribunali speciali). Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "L'uguaglianza giuridica era assente: i nobili e il clero godevano di 'privilegi di foro', ovvero erano giudicati da tribunali ecclesiastici o speciali.", "isCorrect": true },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "Dopo la Rivoluzione, il principio di uguaglianza di fronte alla legge (Art. 6 della Dichiarazione) abolì i tribunali speciali per ceto.", "isCorrect": false }
+              ],
+              "hint": "Questo riguarda il concetto di 'privilegio di foro' o 'giustizia di ceto'."
+            },
+            {
+              "questionNumber": 16,
+              "question": "La giustizia è amministrata in nome del popolo ed è uguale per tutti (uguaglianza giuridica). Questa affermazione è valida per il periodo:",
+              "answerOptions": [
+                { "text": "PRIMA<br>della Rivoluzione Francese", "rationale": "Prima della Rivoluzione, la giustizia non era uguale per tutti, ma cambiava a seconda del ceto sociale e dei suoi privilegi.", "isCorrect": false },
+                { "text": "DOPO<br>la Rivoluzione Francese", "rationale": "La proclamazione dell'uguaglianza giuridica e l'amministrazione della giustizia in nome della nazione furono conquiste fondamentali della Rivoluzione.", "isCorrect": true }
+              ],
+              "hint": "Questo è il principio fondamentale che si oppone ai privilegi di nascita nel sistema giudiziario."
+            }
+          ]
+        };
+
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(quizData.questions.length).fill(null);
+
+        // Funzione per mostrare la domanda corrente
+        function renderQuestion(index) {
+            const container = document.getElementById('quiz-container');
+            const resultsContainer = document.getElementById('results-container');
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+
+            if (index >= quizData.questions.length) {
+                // Fine del quiz: mostra i risultati
+                container.classList.add('hidden');
+                resultsContainer.classList.remove('hidden');
+                displayResults();
+                return;
+            }
+
+            if (index < 0) {
+                currentQuestionIndex = 0;
+                return;
+            }
+
+            // Nasconde i risultati se sono visualizzati
+            resultsContainer.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            const question = quizData.questions[index];
+            const isAnswered = userAnswers[index] !== null;
+            
+            // La spiegazione (rationale) è nascosta finché non si risponde.
+            const rationaleHiddenClass = isAnswered ? '' : 'hidden'; 
+            
+            // Gestione della visibilità del suggerimento (Hint)
+            // L'hint-toggle è SEMPRE visibile.
+            // Lo stato di nascondimento/mostra dell'hint-text è gestito dalla variabile globale in `window`.
+            if (typeof window[`hint_hidden_${index}`] === 'undefined') {
+                 // Inizializza l'hint come nascosto la prima volta che la domanda viene renderizzata
+                window[`hint_hidden_${index}`] = true;
+            }
+            const hintTextHiddenClass = window[`hint_hidden_${index}`] ? 'hidden' : '';
+            const toggleText = window[`hint_hidden_${index}`] ? 'Mostra Suggerimento' : 'Nascondi Suggerimento';
+
+
+            let html = `
+                <div id="q-${index}" class="question-card">
+                    <p class="text-sm font-medium text-blue-600 mb-2">Domanda ${question.questionNumber} di ${quizData.questions.length}</p>
+                    <p class="question-text">${question.question}</p>
+                    
+                    <!-- Pulsanti di risposta -->
+                    <div class="options-container">
+                        ${question.answerOptions.map((option, optIndex) => `
+                            <button
+                                id="option-${optIndex}"
+                                class="answer-button ${isAnswered && userAnswers[index] === optIndex ? (option.isCorrect ? 'button-correct' : 'button-incorrect') : ''} ${isAnswered && question.answerOptions[optIndex].isCorrect && userAnswers[index] !== optIndex ? 'button-correct' : ''}"
+                                onclick="selectAnswer(${index}, ${optIndex})"
+                                ${isAnswered ? 'disabled' : ''}
+                            >
+                                ${option.text}
+                            </button>
+                        `).join('')}
+                    </div>
+                    
+                    <!-- Toggle Suggerimento (SEMPRE visibile) -->
+                    <p id="toggle-${index}" class="hint-toggle" onclick="toggleHint(${index})">
+                        ${toggleText}
+                    </p>
+                    
+                    <!-- Testo Suggerimento (Visibilità gestita dal toggle) -->
+                    <div id="hint-text-${index}" class="hint-text ${hintTextHiddenClass}">
+                        ${question.hint}
+                    </div>
+
+                    <!-- Spiegazione (Rationale) - Nascosta finché non si risponde -->
+                    <div id="rationale-${index}" class="${rationaleHiddenClass}">
+                        ${isAnswered ? getRationaleHtml(question, userAnswers[index]) : ''}
+                    </div>
+                </div>
+            `;
+            container.innerHTML = html;
+            
+            // Aggiorna la visibilità dei pulsanti di navigazione
+            prevBtn.disabled = index === 0;
+            nextBtn.textContent = index === quizData.questions.length - 1 ? 'Termina Quiz' : 'Prossima Domanda';
+            // Aggiorna lo stato di disabilitazione del pulsante Next se non si è risposto (ma permetti Termina Quiz)
+            if (userAnswers[index] === null && index < quizData.questions.length - 1) {
+                nextBtn.disabled = true;
+            } else {
+                nextBtn.disabled = false;
+            }
+        }
+
+        // Funzione per selezionare una risposta
+        function selectAnswer(qIndex, aIndex) {
+            userAnswers[qIndex] = aIndex;
+
+            // Aggiorna l'interfaccia utente
+            const questionElement = document.getElementById('q-' + qIndex);
+            const options = questionElement.querySelectorAll('.answer-button');
+            const question = quizData.questions[qIndex];
+
+            options.forEach((btn, optIndex) => {
+                btn.disabled = true; // Disabilita tutti i pulsanti
+
+                // Rimuove i colori di base per applicare i colori di Corretto/Errato
+                if (optIndex === 0) {
+                    btn.style.backgroundColor = ''; // Indaco per PRIMA
+                    btn.style.color = '';
+                } else if (optIndex === 1) {
+                    btn.style.backgroundColor = ''; // Arancio per DOPO
+                    btn.style.color = '';
+                }
+                
+                btn.classList.remove('button-correct', 'button-incorrect');
+
+
+                if (optIndex === aIndex) {
+                    // Risposta selezionata dall'utente
+                    const isCorrect = question.answerOptions[optIndex].isCorrect;
+                    btn.classList.add(isCorrect ? 'button-correct' : 'button-incorrect');
+                } else if (question.answerOptions[optIndex].isCorrect) {
+                    // Evidenzia la risposta corretta se l'utente ha sbagliato
+                    btn.classList.add('button-correct');
+                }
+            });
+
+            // Mostra la ragione (rationale)
+            const rationaleContainer = document.getElementById('rationale-' + qIndex);
+            if (rationaleContainer) {
+                rationaleContainer.innerHTML = getRationaleHtml(question, aIndex);
+                rationaleContainer.classList.remove('hidden');
+            }
+            
+            // NOTA: Il suggerimento e il toggle restano sempre visibili, quindi non dobbiamo modificarli qui.
+            // L'unica cosa che possiamo fare è nasconderlo, visto che la risposta è stata data (opzionale)
+            /*
+            const hintTextElement = document.getElementById('hint-text-' + qIndex);
+            const toggleElement = document.getElementById('toggle-' + qIndex);
+            if (hintTextElement) {
+                hintTextElement.classList.add('hidden');
+            }
+            if (toggleElement) {
+                toggleElement.textContent = 'Mostra Suggerimento';
+                window[`hint_hidden_${qIndex}`] = true;
+            }
+            */
+
+            // Abilita il pulsante Prossima Domanda
+            document.getElementById('next-btn').disabled = false;
+            // Imposta il focus sul pulsante "Prossima Domanda"
+            document.getElementById('next-btn').focus();
+        }
+
+        // Helper per generare l'HTML della ragione
+        function getRationaleHtml(question, selectedIndex) {
+            const selectedOption = question.answerOptions[selectedIndex];
+            const isCorrect = selectedOption.isCorrect;
+            
+            // Trova la ragione della risposta corretta
+            const correctOption = question.answerOptions.find(opt => opt.isCorrect);
+            const correctRationale = correctOption.rationale;
+
+            const rationaleText = isCorrect ? selectedOption.rationale : `La tua risposta era errata. La risposta corretta è "${correctOption.text.replace(/<br>/g, ' ')}". Motivo: ${correctRationale}`;
+            
+            const className = isCorrect ? 'rationale-correct' : 'rationale-incorrect';
+            const icon = isCorrect ? '✅ ' : '❌ ';
+
+            return `
+                <div class="rationale ${className}">
+                    <span class="font-bold">${icon}${isCorrect ? 'Risposta Corretta: ' : 'Spiegazione Corretta: '}</span> ${rationaleText}
+                </div>
+            `;
+        }
+
+        // Funzione per navigare tra le domande
+        function navigateQuestion(direction) {
+            // Se si tenta di andare avanti senza aver risposto, il pulsante è disabilitato (gestito in renderQuestion), 
+            // a meno che non si sia sull'ultima domanda.
+            
+            currentQuestionIndex += direction;
+            renderQuestion(currentQuestionIndex);
+        }
+
+        // Funzione per mostrare i risultati finali
+        function displayResults() {
+            let correctCount = 0;
+            let answeredCount = 0;
+            for (let i = 0; i < quizData.questions.length; i++) {
+                if (userAnswers[i] !== null) {
+                    answeredCount++;
+                    if (quizData.questions[i].answerOptions[userAnswers[i]].isCorrect) {
+                        correctCount++;
+                    }
+                }
+            }
+            const scoreDisplay = document.getElementById('score-display');
+            scoreDisplay.innerHTML = `Hai risposto correttamente a <span class="text-3xl text-green-600">${correctCount}</span> domande su ${answeredCount} totali. (Totale quiz: ${quizData.questions.length})`;
+        }
+
+        // Funzione per mostrare/nascondere il suggerimento
+        function toggleHint(index) {
+            const hintElement = document.getElementById('hint-text-' + index);
+            const questionCard = document.getElementById('q-' + index);
+            const toggleElement = document.getElementById('toggle-' + index);
+
+            if (!hintElement || !toggleElement) return;
+
+            if (hintElement.classList.contains('hidden')) {
+                // Mostra
+                hintElement.classList.remove('hidden');
+                toggleElement.textContent = 'Nascondi Suggerimento';
+                window[`hint_hidden_${index}`] = false; // Aggiorna lo stato
+            } else {
+                // Nascondi
+                hintElement.classList.add('hidden');
+                toggleElement.textContent = 'Mostra Suggerimento';
+                window[`hint_hidden_${index}`] = true; // Aggiorna lo stato
+            }
+        }
+
+        // Funzione per riavviare il quiz
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            userAnswers.fill(null);
+            // Pulisce lo stato di nascondimento degli hint
+            for (let i = 0; i < quizData.questions.length; i++) {
+                window[`hint_hidden_${i}`] = true; // Nascondi di nuovo tutti gli hint all'inizio
+            }
+            renderQuestion(currentQuestionIndex);
+        }
+
+        // Avvia il quiz al caricamento
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inizializza tutti gli hint come nascosti all'avvio
+            for (let i = 0; i < quizData.questions.length; i++) {
+                window[`hint_hidden_${i}`] = true;
+            }
+            renderQuestion(currentQuestionIndex);
+        });
+
+    </script>
+</body>
+</html>
